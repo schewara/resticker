@@ -1,0 +1,7 @@
+#!/bin/bash
+
+source /usr/local/bin/functions
+
+declare -A REPOSITORIES
+repo_vars_setup
+run "$@"
