@@ -82,9 +82,10 @@ FROM alpine:3.14
 RUN apk add --update --no-cache ca-certificates fuse nfs-utils openssh tzdata bash curl docker-cli gzip tini
 
 ENV RESTIC_REPOSITORY /mnt/restic
+ENV MULTIREPO_CONFIG_PATH /run/secrets/repositories.conf
 
 COPY --from=builder /usr/local/bin/* /usr/local/bin/
-COPY backup prune check /usr/local/bin/
+COPY backup prune check repo_wrapper functions /usr/local/bin/
 COPY entrypoint /
 
 ENTRYPOINT ["/sbin/tini", "--", "/entrypoint"]
