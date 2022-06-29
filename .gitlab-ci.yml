@@ -1,0 +1,199 @@
+---
+image: docker:latest
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_BUILDKIT: 1
+  WORKDIR: /tmp
+stages:
+  - build
+  - test
+  - publish
+
+docker-build:
+  stage: build
+  tags: [dockersock]
+  needs: []
+  before_script:
+    - docker --version
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - export DOCKER_CONTENT_TRUST=1
+  script:
+    - >
+      docker build
+      --pull
+      --file Dockerfile
+      --cache-from $CI_REGISTRY_IMAGE:release
+      --label "org.opencontainers.image.title=$CI_PROJECT_TITLE"
+      --label "org.opencontainers.image.created=$CI_JOB_STARTED_AT"
+      --label "org.opencontainers.image.url=$CI_PROJECT_URL"
+      --label "org.opencontainers.image.documentation=$CI_PROJECT_URL"
+      --label "org.opencontainers.image.source=$CI_PROJECT_URL"
+      --label "org.opencontainers.image.authors=$GITLAB_USER_EMAIL"
+      --label "org.opencontainers.image.version=$CI_COMMIT_REF_NAME"
+      --label "org.opencontainers.image.revision=$CI_COMMIT_SHA"
+      --tag $CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA
+      --build-arg BUILDKIT_INLINE_CACHE=1
+      "."
+  after_script:
+    - docker push $CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA
+
+trivy_fs_scanning:
+  image:
+    name: docker.io/aquasec/trivy:latest
+    entrypoint: [""]
+  stage: test
+  tags: [docker]
+  needs: []
+  script:
+    - trivy --version
+    # - time trivy --cache-dir .trivycache/ image --download-db-only --no-progress
+    - >
+      trivy
+      --cache-dir .trivycache/
+      fs
+      --security-checks vuln,config
+      --exit-code 0
+      --no-progress
+      --format json
+      --output "$CI_PROJECT_DIR/trivy-fs.json"
+      "$CI_PROJECT_DIR"
+    # Prints full report
+    - trivy --cache-dir .trivycache/ fs --security-checks vuln,config --exit-code 0 --no-progress "$CI_PROJECT_DIR"
+    # Fail on critical vulnerabilities
+    # - time trivy --cache-dir .trivycache/ fs --exit-code 1 --severity CRITICAL --no-progress "$CI_PROJECT_DIR"
+  cache:
+    paths:
+      - .trivycache/
+  artifacts:
+    when: always
+    paths:
+      - trivy-fs.json
+
+trivy_container_scanning:
+  image:
+    name: docker.io/aquasec/trivy:latest
+    entrypoint: [""]
+  stage: test
+  tags: [docker]
+  needs:
+    - docker-build
+  # when: delayed
+  # start_in: 5 seconds
+  # retry: 2
+  variables:
+    # No need to clone the repo, we exclusively work on artifacts.  See
+    # https://docs.gitlab.com/ee/ci/runners/README.html#git-strategy
+    GIT_STRATEGY: none
+    TRIVY_USERNAME: gitlab-ci-token
+    TRIVY_PASSWORD: $CI_JOB_TOKEN
+  script:
+    - trivy --version
+    # cache cleanup is needed when scanning images with the same tags, it does not remove the database
+    # - time trivy image --clear-cache
+    - >
+      trivy
+      --cache-dir .trivycache/
+      image
+      --exit-code 0
+      --no-progress
+      --format json
+      --output "$CI_PROJECT_DIR/trivy-image.json"
+      "$CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA"
+    # Prints full report
+    - trivy --cache-dir .trivycache/ image --exit-code 0 --no-progress "$CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA"
+    # Fail on critical vulnerabilities
+    # - time trivy --cache-dir .trivycache/ image --exit-code 1 --severity CRITICAL --no-progress "$CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA"
+  cache:
+    paths:
+      - .trivycache/
+  artifacts:
+    when: always
+    paths:
+      - trivy-image.json
+    # reports:
+    #   container_scanning: gl-container-scanning-report.json
+
+dockle:
+  image:
+    name: docker.io/goodwithtech/dockle:latest
+    entrypoint: [""]
+  stage: test
+  tags: [docker]
+  needs:
+    - docker-build
+  # when: delayed
+  # start_in: 5 seconds
+  # retry: 2
+  variables:
+    GIT_STRATEGY: none
+    DOCKLE_USERNAME: gitlab-ci-token
+    DOCKLE_PASSWORD: $CI_JOB_TOKEN
+  script:
+    - dockle -f json -o dockle.json "$CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA"
+  artifacts:
+    when: always
+    paths:
+      - dockle.json
+
+# add additional tags to speed up future builds
+# https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#make-docker-in-docker-builds-faster-with-docker-layer-caching
+tag-image:
+  stage: publish
+  tags: [dockersock]
+  variables:
+    GIT_STRATEGY: none
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  needs:
+    - trivy_container_scanning
+    - trivy_fs_scanning
+    - dockle
+  before_script:
+    - docker --version
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA
+    - docker tag $CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:release
+    - docker push $CI_REGISTRY_IMAGE:release
+
+# .defectdojo-upload-base:
+#   stage: publish
+#   image: docker.io/maibornwolff/dd-import:latest
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+#   tags: [docker]
+#   variables:
+#     GIT_STRATEGY: none
+#   script:
+#     - dd-reimport-findings.sh
+
+# upload_dd_trivy_fs_scan:
+#   extends: .defectdojo-upload-base
+#   needs:
+#     - job: trivy_fs_scanning
+#       artifacts: true
+#   variables:
+#     DD_TEST_NAME: "Trivy FS"
+#     DD_TEST_TYPE_NAME: "Trivy Scan"
+#     DD_FILE_NAME: "trivy-fs.json"
+
+# upload_dd_trivy_image_scan:
+#   extends: .defectdojo-upload-base
+#   needs:
+#     - job: trivy_container_scanning
+#       artifacts: true
+#   variables:
+#     DD_TEST_NAME: "Trivy Image"
+#     DD_TEST_TYPE_NAME: "Trivy Scan"
+#     DD_FILE_NAME: "trivy-image.json"
+
+# upload_dd_dockle_scan:
+#   extends: .defectdojo-upload-base
+#   needs:
+#     - job: dockle
+#       artifacts: true
+#   variables:
+#     DD_TEST_NAME: "Dockle"
+#     DD_TEST_TYPE_NAME: "Dockle Scan"
+#     DD_FILE_NAME: "dockle.json"
