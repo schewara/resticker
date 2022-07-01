@@ -13,7 +13,7 @@ IFS=" " read -r -a RESTIC_BACKUP_ARGS <<< "$(replace_spaces "$RESTIC_BACKUP_ARGS
 
 tags="$(echo "$RESTIC_BACKUP_TAGS" | tr "," "\n")"
 tag_options=()
-for tag in $tags; do
+for tag in $tags $(extra_tags); do
   tag_options=("${tag_options[@]}" --tag "$tag")
 done
 

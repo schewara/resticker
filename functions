@@ -35,6 +35,18 @@ repo_vars_setup() {
   fi
 }
 
+# This only works properly when doing daily backups
+# If there are multiple manual backups on one of these special days,
+# manual cleanup needs to be performed on duplicate tags
+# Returns: the list of extra Tags
+extra_tags() {
+  local -a tags
+  if [[ "$(date +'%V' -d "tomorrow" )" != "$(date +'%V')" ]]; then tags+=("WEEKLY"); fi
+  if [[ "$(date +'%m' -d "tomorrow" )" != "$(date +'%m')" ]]; then tags+=("MONTHLY"); fi
+  if [[ "$(date +'%Y' -d "tomorrow" )" != "$(date +'%Y')" ]]; then tags+=("YEARLY"); fi
+  echo "${tags[@]}"
+}
+
 init_check() {
   echo "Checking configured repository '${RESTIC_REPOSITORY}' ..."
   if restic cat config > /dev/null; then
