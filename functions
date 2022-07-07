@@ -26,7 +26,7 @@ log() {
   shift 2
   declare -a extra_data=( "${@}" )
   declare logline
-  declare extra_labels
+  declare extra_labels=""
   declare timestamp
   timestamp="$(date -Ins)"
 
