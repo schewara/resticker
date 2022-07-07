@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
+# shellcheck source=functions
 source /usr/local/bin/functions
 
 main() {
@@ -8,14 +9,21 @@ main() {
 
   start=$(date +%s)
 
-  if [ -n "${RESTIC_FORGET_ARGS:-}" ]; then
+  if [[ "${ARCHIVE}" == "true" ]]; then
+    # shellcheck source=archive
+    . /usr/local/bin/archive
+  fi
+
+  if [[ -n "${RESTIC_FORGET_ARGS:-}" ]]; then
     log info "Forget about old snapshots based on RESTIC_FORGET_ARGS" "${RESTIC_FORGET_ARGS}"
+    # shellcheck disable=SC2086
     restic forget ${RESTIC_FORGET_ARGS}
   fi
 
   log info "Starting prune" "${RESTIC_REPOSITORY}"
 
   set +e
+  # shellcheck disable=SC2086
   if ! restic --repo="${RESTIC_REPOSITORY}" prune ${RESTIC_PRUNE_ARGS:-} ; then
     set -e
     run_commands "${POST_COMMANDS_FAILURE:-}"

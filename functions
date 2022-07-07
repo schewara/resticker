@@ -28,7 +28,7 @@ log() {
   declare logline
 
   if [[ "${LOGFORMAT}" == "json" ]]; then
-    logline=$(printf '{"timestamp":"%s","level":"%s","message":"%s","data": "%s"}' "${timestamp}" "${level}" "${message}" "${data:-null}")
+    logline=$(printf '{"timestamp":"%s","level":"%s","message":"%s","data": %s}' "${timestamp}" "${level}" "${message}" "${data:-null}")
   else
     logline=$(printf '%s [%s] %s: %s' "${timestamp}" "${level}" "${message}" "${data}")
   fi
@@ -37,14 +37,14 @@ log() {
 }
 
 repo_vars_setup() {
-  if [ "${MULTIREPO:-}" == "true" ]; then
+  if [[ "${MULTIREPO:-}" == "true" ]]; then
     if [[ -r "${MULTIREPO_CONFIG_PATH}" ]]; then
       while read -r repo password; do
         REPOSITORIES["$repo"]="$password"
       done < "${MULTIREPO_CONFIG_PATH}"
-      log info "${#REPOSITORIES[@]} repository configs loaded from ${MULTIREPO_CONFIG_PATH}"
+      log info "${#REPOSITORIES[@]} repository configs loaded" "{\"file\":\"${MULTIREPO_CONFIG_PATH}\"}"
     else
-      log error "Could not read repository configs from ${MULTIREPO_CONFIG_PATH}"
+      log error "Could not read repository configuration" "{\"file\":\"${MULTIREPO_CONFIG_PATH}\"}"
       exit 1
     fi
   else
@@ -88,10 +88,10 @@ run() {
   shift
   for repo in "${!REPOSITORIES[@]}"; do
 
-    RESTIC_REPOSITORY="${repo}"
-    RESTIC_PASSWORD="${REPOSITORIES[${repo}]}"
+    export RESTIC_REPOSITORY="${repo}"
+    export RESTIC_PASSWORD="${REPOSITORIES[${repo}]}"
 
-    log info "Executing ${action} on ${RESTIC_REPOSITORY} ..."
+    log info "Executing ${action}" "{\"repo\":\"${RESTIC_REPOSITORY}\"}"
     case ${action} in
       backup | check | prune | archive | restic)
         /usr/local/bin/"${action}" "$@"
