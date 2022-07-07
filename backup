@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
-source /usr/local/bin/functions
+. /usr/local/bin/functions
 
 trap run_exit_commands EXIT
 
@@ -30,7 +30,7 @@ for arg in "${RESTIC_BACKUP_ARGS[@]}"; do
 done
 
 start=$(date +%s)
-log info "Starting Backup" "${RESTIC_REPOSITORY}"
+log info "Starting Backup" "repo,${RESTIC_REPOSITORY}"
 
 set +e
 restic --repo="${RESTIC_REPOSITORY}" backup "${backup_args[@]}" "${tag_options[@]}" "${backup_sources[@]}"
@@ -45,16 +45,16 @@ if [ $rc -ne 0 ]; then
   fi
 fi
 
-log info "Backup successful" "${RESTIC_REPOSITORY}"
+log info "Backup successful" "repo,${RESTIC_REPOSITORY}"
 
 if [ -n "${RESTIC_FORGET_ARGS}" ]; then
   IFS=" " read -r -a RESTIC_FORGET_ARGS <<< "$RESTIC_FORGET_ARGS"
-  log info "Forget about old snapshots based on RESTIC_FORGET_ARGS" "${RESTIC_FORGET_ARGS[@]}"
+  log info "Forget about old snapshots based on RESTIC_FORGET_ARGS - ${RESTIC_FORGET_ARGS[@]}"
   restic forget "${tag_options[@]}" "${RESTIC_FORGET_ARGS[@]}"
 fi
 
 end=$(date +%s)
-log info "Finished backup after $((end-start)) seconds" "${RESTIC_REPOSITORY}"
+log info "Finished backup after $((end-start)) seconds" "repo,${RESTIC_REPOSITORY}"
 
 [ $rc -ne 0 ] && exit $rc
 

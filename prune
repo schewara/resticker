@@ -15,12 +15,12 @@ main() {
   fi
 
   if [[ -n "${RESTIC_FORGET_ARGS:-}" ]]; then
-    log info "Forget about old snapshots based on RESTIC_FORGET_ARGS" "${RESTIC_FORGET_ARGS}"
+    log info "Forget about old snapshots based on RESTIC_FORGET_ARGS - ${RESTIC_FORGET_ARGS}"
     # shellcheck disable=SC2086
     restic forget ${RESTIC_FORGET_ARGS}
   fi
 
-  log info "Starting prune" "${RESTIC_REPOSITORY}"
+  log info "Starting prune" "repo,${RESTIC_REPOSITORY}"
 
   set +e
   # shellcheck disable=SC2086
@@ -32,10 +32,10 @@ main() {
     set -e
   fi
 
-  log info "Prune successful" "${RESTIC_REPOSITORY}"
+  log info "Prune successful" "repo,${RESTIC_REPOSITORY}"
 
   end="$(date +%s)"
-  log info "Finished prune after $((end-start)) seconds" "${RESTIC_REPOSITORY}"
+  log info "Finished prune after $((end-start)) seconds" "repo,${RESTIC_REPOSITORY}"
 
   run_commands "${POST_COMMANDS_SUCCESS:-}"
 }

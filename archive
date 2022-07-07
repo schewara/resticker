@@ -18,11 +18,11 @@ main() {
   export RESTIC_PASSWORD="${ARCHIVE_PASSWORD}"
   export RESTIC_PASSWORD2="${backup_password}"
 
-  log info "Start archiving" "${archive_dir}"
+  log info "Start archiving" "repo,${archive_dir}"
   set +e
   if ! restic cat --repo="${archive_repo}" config > /dev/null; then
     set -e
-    log info "Initializing archive repository" "${archive_dir}"
+    log info "Initializing archive repository" "repo,${archive_dir}"
     restic --repo="${archive_repo}" init --repo2="${backup_repo}" --copy-chunker-params
   else
     set -e
@@ -32,24 +32,24 @@ main() {
   export RESTIC_PASSWORD="${backup_password}"
   export RESTIC_PASSWORD2="${ARCHIVE_PASSWORD}"
 
-  log info "Start copy" "${archive_dir}"
+  log info "Start copy" "repo,${archive_dir}"
   set +e
   # shellcheck disable=SC2086
   if ! restic --repo="${backup_repo}" copy --repo2="${archive_repo}" ${ARCHIVE_ARGS:-}; then
     set -e
-    log error "Copy failed" "${archive_dir}"
+    log error "Copy failed" "repo,${archive_dir}"
   else
     set -e
-    log info "Copy successful" "${archive_dir}"
+    log info "Copy successful" "repo,${archive_dir}"
   fi
 
   end="$(date +%s)"
-  log info "Finished archiving after $((end-start)) seconds" "${archive_dir}"
+  log info "Finished archiving after $((end-start)) seconds" "repo,${archive_dir}"
 }
 
 trap run_exit_commands EXIT
 if [[ "${ARCHIVE}" == "true" ]]; then
   main "$@"
 else
-  log warn "Archiving is disabled globally. Exiting"
+  log warn "Archiving is disabled globally. Exiting."
 fi

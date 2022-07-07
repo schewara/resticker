@@ -20,17 +20,34 @@ replace_spaces_back() {
 }
 
 log() {
+  # extra labels can be defined as "key,value" entries to the function call
   declare level="$1"
   declare message="$2"
-  declare data="${3:-}"
-  declare timestamp
-  timestamp=$(date -Ins)
+  shift 2
+  declare -a extra_data=( "${@}" )
   declare logline
+  declare extra_labels
+  declare timestamp
+  timestamp="$(date -Ins)"
 
+  # formatting of the extra labels
+  if (( "${#extra_data[@]}" > 0 )); then
+    for entry in "${extra_data[@]}"; do
+      while IFS="," read -r lkey lvalue; do
+        if [[ "${LOGFORMAT}" == "json" ]]; then
+          extra_labels=$(printf '%s,"%s":"%s"' "${extra_labels}" "${lkey}" "${lvalue}")
+        else
+          extra_labels=$(printf '%s %s=%s' "${extra_labels:- -}" "${lkey}" "${lvalue}")
+        fi
+      done <<< "${entry}"
+    done
+  fi
+
+  # formatting of the final logline
   if [[ "${LOGFORMAT}" == "json" ]]; then
-    logline=$(printf '{"timestamp":"%s","level":"%s","message":"%s","data": %s}' "${timestamp}" "${level}" "${message}" "${data:-null}")
+    logline=$(printf '{"timestamp":"%s","level":"%s","message":"%s"%s}' "${timestamp}" "${level}" "${message}" "${extra_labels}")
   else
-    logline=$(printf '%s [%s] %s: %s' "${timestamp}" "${level}" "${message}" "${data}")
+    logline=$(printf '%s [%s] %s%s' "${timestamp}" "${level}" "${message}" "${extra_labels}")
   fi
 
   echo -e "${logline}"
@@ -42,9 +59,9 @@ repo_vars_setup() {
       while read -r repo password; do
         REPOSITORIES["$repo"]="$password"
       done < "${MULTIREPO_CONFIG_PATH}"
-      log info "${#REPOSITORIES[@]} repository configs loaded" "{\"file\":\"${MULTIREPO_CONFIG_PATH}\"}"
+      log info "${#REPOSITORIES[@]} repository configs loaded" "file,${MULTIREPO_CONFIG_PATH}"
     else
-      log error "Could not read repository configuration" "{\"file\":\"${MULTIREPO_CONFIG_PATH}\"}"
+      log error "Could not read repository configuration" "file,${MULTIREPO_CONFIG_PATH}"
       exit 1
     fi
   else
@@ -65,18 +82,18 @@ extra_tags() {
 }
 
 init_check() {
-  log info "Checking configured repository" "${RESTIC_REPOSITORY}"
+  log info "Checking configured repository" "repo,${RESTIC_REPOSITORY}"
   if restic cat config > /dev/null; then
-    log info "Repository found."
+    log info "Repository found." "repo,${RESTIC_REPOSITORY}"
   else
-    log warn "Could not access the configured repository. Trying to initialize (in case it has not been initialized yet) ..."
+    log warn "Could not access the configured repository. Trying to initialize (in case it has not been initialized yet) ..." "repo,${RESTIC_REPOSITORY}"
     if restic init; then
-      log info "Repository successfully initialized."
+      log info "Repository successfully initialized." "repo,${RESTIC_REPOSITORY}"
     else
       if [ "${SKIP_INIT_CHECK:-}" == "true" ]; then
-        log warn "Initialization failed. Ignoring errors because SKIP_INIT_CHECK is set in your configuration."
+        log warn "Initialization failed. Ignoring errors because SKIP_INIT_CHECK is set in your configuration." "repo,${RESTIC_REPOSITORY}"
       else
-        log error "Initialization failed. Please see error messages above and check your configuration. Exiting."
+        log error "Initialization failed. Please see error messages above and check your configuration. Exiting." "repo,${RESTIC_REPOSITORY}"
         exit 1
       fi
     fi
@@ -91,7 +108,7 @@ run() {
     export RESTIC_REPOSITORY="${repo}"
     export RESTIC_PASSWORD="${REPOSITORIES[${repo}]}"
 
-    log info "Executing ${action}" "{\"repo\":\"${RESTIC_REPOSITORY}\"}"
+    log info "Executing ${action}" "repo,${RESTIC_REPOSITORY}"
     case ${action} in
       backup | check | prune | archive | restic)
         /usr/local/bin/"${action}" "$@"
