@@ -7,7 +7,7 @@ main() {
   run_commands "${PRE_COMMANDS:-}"
 
   start=$(date +%s)
-  echo Starting check at "$(date +"%Y-%m-%d %H:%M:%S")"
+  log info "Starting check" "${RESTIC_REPOSITORY}"
 
   set +e
   if ! restic --repo="${RESTIC_REPOSITORY}" check ${RESTIC_CHECK_ARGS:-}; then
@@ -18,10 +18,10 @@ main() {
     set -e
   fi
 
-  echo Check successful
+  log info "Check successful" "${RESTIC_REPOSITORY}"
 
   end="$(date +%s)"
-  echo Finished check at "$(date +"%Y-%m-%d %H:%M:%S")" after $((end-start)) seconds
+  log info "Finished check after $((end-start)) seconds" "${RESTIC_REPOSITORY}"
 
   run_commands "${POST_COMMANDS_SUCCESS:-}"
 }

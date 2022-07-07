@@ -19,15 +19,32 @@ replace_spaces_back() {
   echo "${1/\\/ }"
 }
 
+log() {
+  declare level="$1"
+  declare message="$2"
+  declare data="${3:-}"
+  declare timestamp
+  timestamp=$(date -Ins)
+  declare logline
+
+  if [[ "${LOGFORMAT}" == "json" ]]; then
+    logline=$(printf '{"timestamp":"%s","level":"%s","message":"%s","data": "%s"}' "${timestamp}" "${level}" "${message}" "${data:-null}")
+  else
+    logline=$(printf '%s [%s] %s: %s' "${timestamp}" "${level}" "${message}" "${data}")
+  fi
+
+  echo -e "${logline}"
+}
+
 repo_vars_setup() {
   if [ "${MULTIREPO:-}" == "true" ]; then
     if [[ -r "${MULTIREPO_CONFIG_PATH}" ]]; then
       while read -r repo password; do
         REPOSITORIES["$repo"]="$password"
       done < "${MULTIREPO_CONFIG_PATH}"
-      echo "${#REPOSITORIES[@]} repository configs loaded from ${MULTIREPO_CONFIG_PATH}"
+      log info "${#REPOSITORIES[@]} repository configs loaded from ${MULTIREPO_CONFIG_PATH}"
     else
-      echo "Could not read repository configs from ${MULTIREPO_CONFIG_PATH}"
+      log error "Could not read repository configs from ${MULTIREPO_CONFIG_PATH}"
       exit 1
     fi
   else
@@ -48,23 +65,22 @@ extra_tags() {
 }
 
 init_check() {
-  echo "Checking configured repository '${RESTIC_REPOSITORY}' ..."
+  log info "Checking configured repository" "${RESTIC_REPOSITORY}"
   if restic cat config > /dev/null; then
-    echo "Repository found."
+    log info "Repository found."
   else
-    echo "Could not access the configured repository. Trying to initialize (in case it has not been initialized yet) ..."
+    log warn "Could not access the configured repository. Trying to initialize (in case it has not been initialized yet) ..."
     if restic init; then
-      echo "Repository successfully initialized."
+      log info "Repository successfully initialized."
     else
       if [ "${SKIP_INIT_CHECK:-}" == "true" ]; then
-        echo "Initialization failed. Ignoring errors because SKIP_INIT_CHECK is set in your configuration."
+        log warn "Initialization failed. Ignoring errors because SKIP_INIT_CHECK is set in your configuration."
       else
-        echo "Initialization failed. Please see error messages above and check your configuration. Exiting."
+        log error "Initialization failed. Please see error messages above and check your configuration. Exiting."
         exit 1
       fi
     fi
   fi
-  echo -e "\n"
 }
 
 run() {
@@ -75,16 +91,16 @@ run() {
     RESTIC_REPOSITORY="${repo}"
     RESTIC_PASSWORD="${REPOSITORIES[${repo}]}"
 
-    echo "Executing ${action} on ${RESTIC_REPOSITORY} ..."
+    log info "Executing ${action} on ${RESTIC_REPOSITORY} ..."
     case ${action} in
-      backup | check | prune | restic)
+      backup | check | prune | archive | restic)
         /usr/local/bin/"${action}" "$@"
         ;;
       init_check)
         init_check
         ;;
       *)
-        echo "${action} is not defined"
+        log error "${action} is not defined"
     esac
   done
 }
@@ -92,6 +108,6 @@ run() {
 setup_cron() {
   local action=${1}
   local cron_expr=${2}
-  echo "Scheduling ${action} job according to cron expression."
+  log info "Scheduling ${action} job according to cron expression."
   exec go-cron "${cron_expr}" /usr/local/bin/repo_wrapper "${action}"
 }

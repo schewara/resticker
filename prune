@@ -9,11 +9,11 @@ main() {
   start=$(date +%s)
 
   if [ -n "${RESTIC_FORGET_ARGS:-}" ]; then
-    echo Forget about old snapshots based on RESTIC_FORGET_ARGS = ${RESTIC_FORGET_ARGS}
+    log info "Forget about old snapshots based on RESTIC_FORGET_ARGS" "${RESTIC_FORGET_ARGS}"
     restic forget ${RESTIC_FORGET_ARGS}
   fi
 
-  echo Starting prune at "$(date +"%Y-%m-%d %H:%M:%S")"
+  log info "Starting prune" "${RESTIC_REPOSITORY}"
 
   set +e
   if ! restic --repo="${RESTIC_REPOSITORY}" prune ${RESTIC_PRUNE_ARGS:-} ; then
@@ -24,10 +24,10 @@ main() {
     set -e
   fi
 
-  echo Prune successful
+  log info "Prune successful" "${RESTIC_REPOSITORY}"
 
   end="$(date +%s)"
-  echo Finished prune at "$(date +"%Y-%m-%d %H:%M:%S")" after $((end-start)) seconds
+  log info "Finished prune after $((end-start)) seconds" "${RESTIC_REPOSITORY}"
 
   run_commands "${POST_COMMANDS_SUCCESS:-}"
 }

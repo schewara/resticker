@@ -26,15 +26,15 @@ if [[ $# -gt 0 ]]; then
   run restic "$@"
 else
   if [[ -n "${BACKUP_CRON:-}" ]] && [[ -n "${PRUNE_CRON:-}" ]]; then
-    >&2 echo "Environment variables BACKUP_CRON and PRUNE_CRON are mutually exclusive. Please fix your configuration. Exiting."
+    >&2 log error "Environment variables BACKUP_CRON and PRUNE_CRON are mutually exclusive. Please fix your configuration. Exiting."
     exit 1
   fi
   if [[ -n "${BACKUP_CRON:-}" ]] && [[ -n "${CHECK_CRON:-}" ]]; then
-    >&2 echo "Environment variables BACKUP_CRON and CHECK_CRON are mutually exclusive. Please fix your configuration. Exiting."
+    >&2 log error "Environment variables BACKUP_CRON and CHECK_CRON are mutually exclusive. Please fix your configuration. Exiting."
     exit 1
   fi
   if [[ -n "${PRUNE_CRON:-}" ]] && [[ -n "${CHECK_CRON:-}" ]]; then
-    >&2 echo "Environment variables PRUNE_CRON and CHECK_CRON are mutually exclusive. Please fix your configuration. Exiting."
+    >&2 log error "Environment variables PRUNE_CRON and CHECK_CRON are mutually exclusive. Please fix your configuration. Exiting."
     exit 1
   fi
   if [[ -n "${BACKUP_CRON:-}" ]]; then
@@ -42,6 +42,12 @@ else
       run backup
     fi
     setup_cron backup "${BACKUP_CRON}"
+  fi
+  if [[ -n "${ARCHIVE_CRON:-}" ]] && [[ "${ARCHIVE}" == "true" ]]; then
+    if [ "${RUN_ON_STARTUP:-}" == "true" ]; then
+      run archive
+    fi
+    setup_cron archive "${ARCHIVE_CRON}"
   fi
   if [[ -n "${PRUNE_CRON:-}" ]]; then
     if [ "${RUN_ON_STARTUP:-}" == "true" ]; then
@@ -55,6 +61,6 @@ else
     fi
     setup_cron check "${CHECK_CRON}"
   fi
-  >&2 echo "No valid operating mode configured! Exiting."
+  >&2 log error "No valid operating mode configured! Exiting."
   exit 1
 fi

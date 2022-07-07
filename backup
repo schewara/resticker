@@ -30,7 +30,7 @@ for arg in "${RESTIC_BACKUP_ARGS[@]}"; do
 done
 
 start=$(date +%s)
-echo Starting Backup at $(date +"%Y-%m-%d %H:%M:%S")
+log info "Starting Backup" "${RESTIC_REPOSITORY}"
 
 set +e
 restic --repo="${RESTIC_REPOSITORY}" backup "${backup_args[@]}" "${tag_options[@]}" "${backup_sources[@]}"
@@ -39,22 +39,22 @@ set -e
 
 if [ $rc -ne 0 ]; then
   if [ $rc -eq 3 ] && [ -n "${POST_COMMANDS_INCOMPLETE:-}" ]; then
-  	run_commands "${POST_COMMANDS_INCOMPLETE:-}"
+    run_commands "${POST_COMMANDS_INCOMPLETE:-}"
   else
-  	run_commands "${POST_COMMANDS_FAILURE:-}"
+    run_commands "${POST_COMMANDS_FAILURE:-}"
   fi
 fi
 
-echo Backup successful
+log info "Backup successful" "${RESTIC_REPOSITORY}"
 
 if [ -n "${RESTIC_FORGET_ARGS}" ]; then
   IFS=" " read -r -a RESTIC_FORGET_ARGS <<< "$RESTIC_FORGET_ARGS"
-  echo Forget about old snapshots based on RESTIC_FORGET_ARGS = "${RESTIC_FORGET_ARGS[@]}"
+  log info "Forget about old snapshots based on RESTIC_FORGET_ARGS" "${RESTIC_FORGET_ARGS[@]}"
   restic forget "${tag_options[@]}" "${RESTIC_FORGET_ARGS[@]}"
 fi
 
 end=$(date +%s)
-echo Finished backup at $(date +"%Y-%m-%d %H:%M:%S") after $((end-start)) seconds
+log info "Finished backup after $((end-start)) seconds" "${RESTIC_REPOSITORY}"
 
 [ $rc -ne 0 ] && exit $rc
 
