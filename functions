@@ -75,9 +75,9 @@ repo_vars_setup() {
 # Returns: the list of extra Tags
 extra_tags() {
   local -a tags
-  if [[ "$(date +'%V' -d "tomorrow" )" != "$(date +'%V')" ]]; then tags+=("WEEKLY"); fi
-  if [[ "$(date +'%m' -d "tomorrow" )" != "$(date +'%m')" ]]; then tags+=("MONTHLY"); fi
-  if [[ "$(date +'%Y' -d "tomorrow" )" != "$(date +'%Y')" ]]; then tags+=("YEARLY"); fi
+  # if (( "$(date +'%u')" == 1 )); then tags+=("WEEKLY"); fi
+  if (( "$(date +'%d')" == 1 )); then tags+=("MONTHLY"); fi
+  if (( "$(date +'%j')" == 1 )); then tags+=("YEARLY"); fi
   echo "${tags[@]}"
 }
 
