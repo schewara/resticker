@@ -40,7 +40,8 @@ docker-build:
 
 trivy_fs_scanning:
   image:
-    name: docker.io/aquasec/trivy:latest
+    name: "${CI_REGISTRY}/sos/container-images/trivy:latest"
+    pull_policy: always
     entrypoint: [""]
   stage: test
   tags: [docker]
@@ -72,7 +73,8 @@ trivy_fs_scanning:
 
 trivy_container_scanning:
   image:
-    name: docker.io/aquasec/trivy:latest
+    name: "${CI_REGISTRY}/sos/container-images/trivy:latest"
+    pull_policy: always
     entrypoint: [""]
   stage: test
   tags: [docker]
