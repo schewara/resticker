@@ -48,10 +48,8 @@ trivy_fs_scanning:
   needs: []
   script:
     - trivy --version
-    # - time trivy --cache-dir .trivycache/ image --download-db-only --no-progress
     - >
       trivy
-      --cache-dir .trivycache/
       fs
       --scanners vuln,config
       --exit-code 0
@@ -60,14 +58,12 @@ trivy_fs_scanning:
       --output "$CI_PROJECT_DIR/trivy-fs.json"
       "$CI_PROJECT_DIR"
     # Prints full report
-    - trivy --cache-dir .trivycache/ fs --scanners vuln,config --exit-code 0 --no-progress "$CI_PROJECT_DIR"
+    - trivy fs --scanners vuln,config --exit-code 0 --no-progress "$CI_PROJECT_DIR"
     # Fail on critical vulnerabilities
-    # - time trivy --cache-dir .trivycache/ fs --exit-code 1 --severity CRITICAL --no-progress "$CI_PROJECT_DIR"
-  cache:
-    paths:
-      - .trivycache/
+    # - time trivy fs --exit-code 1 --severity CRITICAL --no-progress "$CI_PROJECT_DIR"
   artifacts:
     when: always
+    expose_as: "Trivy FS Scan"
     paths:
       - trivy-fs.json
 
@@ -91,11 +87,8 @@ trivy_container_scanning:
     TRIVY_PASSWORD: $CI_JOB_TOKEN
   script:
     - trivy --version
-    # cache cleanup is needed when scanning images with the same tags, it does not remove the database
-    # - time trivy image --clear-cache
     - >
       trivy
-      --cache-dir .trivycache/
       image
       --exit-code 0
       --no-progress
@@ -103,14 +96,12 @@ trivy_container_scanning:
       --output "$CI_PROJECT_DIR/trivy-image.json"
       "$CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA"
     # Prints full report
-    - trivy --cache-dir .trivycache/ image --exit-code 0 --no-progress "$CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA"
+    - trivy image --exit-code 0 --no-progress "$CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA"
     # Fail on critical vulnerabilities
-    # - time trivy --cache-dir .trivycache/ image --exit-code 1 --severity CRITICAL --no-progress "$CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA"
-  cache:
-    paths:
-      - .trivycache/
+    # - time trivy image --exit-code 1 --severity CRITICAL --no-progress "$CI_REGISTRY_IMAGE:release-$CI_COMMIT_SHORT_SHA"
   artifacts:
     when: always
+    expose_as: "Trivy Image Scan"
     paths:
       - trivy-image.json
     # reports:
