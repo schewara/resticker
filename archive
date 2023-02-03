@@ -12,44 +12,39 @@ main() {
   local backup_repo="${RESTIC_REPOSITORY}"
   local archive_repo="${ARCHIVE_REPO_BASEURL}/${archive_dir}"
 
+  export RESTIC_PASSWORD="${ARCHIVE_PASSWORD}"
+  export RESTIC_FROM_PASSWORD="${backup_password}"
+
   start="$(date +%s)"
 
-  # Twist around the variables for initialization
-  export RESTIC_PASSWORD="${ARCHIVE_PASSWORD}"
-  export RESTIC_PASSWORD2="${backup_password}"
-
-  log info "Start archiving" "repo,${archive_dir}"
+  log info "archive start" "repo,${archive_repo}"
   set +e
   if ! restic cat --repo="${archive_repo}" config > /dev/null; then
     set -e
-    log info "Initializing archive repository" "repo,${archive_dir}"
-    restic --repo="${archive_repo}" init --repo2="${backup_repo}" --copy-chunker-params
+    log info "init archive repository" "repo,${archive_repo}"
+    restic --repo="${archive_repo}" init --from-repo="${backup_repo}" --copy-chunker-params
   else
     set -e
   fi
 
-  # Twist around the variables for copying
-  export RESTIC_PASSWORD="${backup_password}"
-  export RESTIC_PASSWORD2="${ARCHIVE_PASSWORD}"
-
-  log info "Start copy" "repo,${archive_dir}"
+  log info "start copy" "repo,${archive_dir}"
   set +e
   # shellcheck disable=SC2086
-  if ! restic --repo="${backup_repo}" copy --repo2="${archive_repo}" ${ARCHIVE_ARGS:-}; then
+  if ! restic --from-repo="${backup_repo}" copy --repo="${archive_repo}" ${ARCHIVE_ARGS:-}; then
     set -e
-    log error "Copy failed" "repo,${archive_dir}"
+    log error "copy failed" "repo,${archive_repo}"
   else
     set -e
-    log info "Copy successful" "repo,${archive_dir}"
+    log info "copy successful" "repo,${archive_repo}"
   fi
 
   end="$(date +%s)"
-  log info "Finished archiving after $((end-start)) seconds" "repo,${archive_dir}"
+  log info "archive end" "repo,${archive_repo}" "duration,$((end-start))"
 }
 
 trap run_exit_commands EXIT
 if [[ "${ARCHIVE}" == "true" ]]; then
   main "$@"
 else
-  log warn "Archiving is disabled globally. Exiting."
+  log warn "archive is disabled globally. exiting"
 fi
