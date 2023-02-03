@@ -52,14 +52,14 @@ trivy_fs_scanning:
       trivy
       --cache-dir .trivycache/
       fs
-      --security-checks vuln,config
+      --scanners vuln,config
       --exit-code 0
       --no-progress
       --format json
       --output "$CI_PROJECT_DIR/trivy-fs.json"
       "$CI_PROJECT_DIR"
     # Prints full report
-    - trivy --cache-dir .trivycache/ fs --security-checks vuln,config --exit-code 0 --no-progress "$CI_PROJECT_DIR"
+    - trivy --cache-dir .trivycache/ fs --scanners vuln,config --exit-code 0 --no-progress "$CI_PROJECT_DIR"
     # Fail on critical vulnerabilities
     # - time trivy --cache-dir .trivycache/ fs --exit-code 1 --severity CRITICAL --no-progress "$CI_PROJECT_DIR"
   cache:
