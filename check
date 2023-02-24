@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-source /usr/local/bin/functions
+# shellcheck source=functions
+. /usr/local/bin/functions
 
 main() {
   run_commands "${PRE_COMMANDS:-}"
@@ -10,7 +11,7 @@ main() {
   log info "Starting check" "repo,${RESTIC_REPOSITORY}"
 
   set +e
-  if ! restic --repo="${RESTIC_REPOSITORY}" check ${RESTIC_CHECK_ARGS:-}; then
+  if ! restic --repo="${RESTIC_REPOSITORY}" check "${RESTIC_CHECK_ARGS:-}"; then
     set -e
     run_commands "${POST_COMMANDS_FAILURE:-}"
     exit

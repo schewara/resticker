@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # shellcheck source=functions
-source /usr/local/bin/functions
+. /usr/local/bin/functions
 
 main() {
   run_commands "${PRE_COMMANDS:-}"

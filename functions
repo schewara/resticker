@@ -74,11 +74,11 @@ repo_vars_setup() {
 # manual cleanup needs to be performed on duplicate tags
 # Returns: the list of extra Tags
 extra_tags() {
-  local -a tags
-  # if (( "$(date +'%u')" == 1 )); then tags+=("WEEKLY"); fi
-  if (( "$(date +'%d')" == 1 )); then tags+=("MONTHLY"); fi
-  if (( "$(date +'%j')" == 1 )); then tags+=("YEARLY"); fi
-  echo "${tags[@]}"
+  local -a etags
+  # if (( "$(date +'%u')" == 1 )); then etags+=("WEEKLY"); fi
+  if (( "$(date +'%d')" == 1 )); then etags+=("MONTHLY"); fi
+  if (( "$(date +'%j')" == 1 )); then etags+=("YEARLY"); fi
+  echo "${etags[@]}"
 }
 
 init_check() {

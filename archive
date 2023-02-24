@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # shellcheck source=functions
-source /usr/local/bin/functions
+. /usr/local/bin/functions
 
 main() {
   local start
@@ -12,8 +12,9 @@ main() {
   local backup_repo="${RESTIC_REPOSITORY}"
   local archive_repo="${ARCHIVE_REPO_BASEURL}/${archive_dir}"
 
-  export RESTIC_PASSWORD="${ARCHIVE_PASSWORD}"
-  export RESTIC_FROM_PASSWORD="${backup_password}"
+  local RESTIC_PASSWORD="${ARCHIVE_PASSWORD}"
+  # shellcheck disable=SC2034
+  local RESTIC_FROM_PASSWORD="${backup_password}"
 
   start="$(date +%s)"
 

@@ -1,7 +1,9 @@
 #!/bin/bash
 
-source /usr/local/bin/functions
+# shellcheck source=functions
+. /usr/local/bin/functions
 
+# shellcheck disable=SC2034
 declare -A REPOSITORIES
 repo_vars_setup
 run "$@"

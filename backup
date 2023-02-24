@@ -1,6 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
+# shellcheck source=functions
 . /usr/local/bin/functions
 
 trap run_exit_commands EXIT
@@ -18,9 +19,9 @@ for tag in $tags $(extra_tags); do
 done
 
 backup_sources=()
-for source in "${RESTIC_BACKUP_SOURCES[@]}"; do
-  source="$(replace_spaces_back "$source")"
-  backup_sources=("${backup_sources[@]}" "$source")
+for backup_source in "${RESTIC_BACKUP_SOURCES[@]}"; do
+  backup_source="$(replace_spaces_back "$backup_source")"
+  backup_sources=("${backup_sources[@]}" "$backup_source")
 done
 
 backup_args=()
@@ -49,7 +50,7 @@ log info "Backup successful" "repo,${RESTIC_REPOSITORY}"
 
 if [ -n "${RESTIC_FORGET_ARGS}" ]; then
   IFS=" " read -r -a RESTIC_FORGET_ARGS <<< "$RESTIC_FORGET_ARGS"
-  log info "Forget about old snapshots based on RESTIC_FORGET_ARGS - ${RESTIC_FORGET_ARGS[@]}"
+  log info "Forget about old snapshots based on RESTIC_FORGET_ARGS - ${RESTIC_FORGET_ARGS[*]}"
   restic forget "${tag_options[@]}" "${RESTIC_FORGET_ARGS[@]}"
 fi
 
