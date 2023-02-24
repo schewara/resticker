@@ -14,7 +14,7 @@ main() {
 
   local RESTIC_PASSWORD="${ARCHIVE_PASSWORD}"
   # shellcheck disable=SC2034
-  local RESTIC_FROM_PASSWORD="${backup_password}"
+  export RESTIC_FROM_PASSWORD="${backup_password}"
 
   start="$(date +%s)"
 
