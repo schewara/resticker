@@ -24,8 +24,8 @@ docker-build:
   needs: []
   before_script:
     - docker --version
-    - docker login -u "${REGISTRY_USERNAME} -p ${REGISTRY_PASSWORD}" "${CONTAINER_REGISTRY_PULL}"
-    - docker login -u "${REGISTRY_USERNAME} -p ${REGISTRY_PASSWORD}" "${CONTAINER_REGISTRY_PUSH}"
+    - docker login -u "${REGISTRY_USERNAME}" -p "${REGISTRY_PASSWORD}" "${CONTAINER_REGISTRY_PULL}"
+    - docker login -u "${REGISTRY_USERNAME}" -p "${REGISTRY_PASSWORD}" "${CONTAINER_REGISTRY_PUSH}"
     - export DOCKER_CONTENT_TRUST=1
   script:
     - >
@@ -152,7 +152,7 @@ tag-image:
     - trivy_fs_scanning
     - dockle
   before_script:
-    - docker login -u "${REGISTRY_USERNAME} -p ${REGISTRY_PASSWORD}" "${CONTAINER_REGISTRY_PUSH}"
+    - docker login -u "${REGISTRY_USERNAME}" -p "${REGISTRY_PASSWORD}" "${CONTAINER_REGISTRY_PUSH}"
   script:
     - docker pull "${CONTAINER_REGISTRY_PUSH}/${REGISTRY_NAMESPACE}/resticker:release-${CI_COMMIT_SHORT_SHA}"
     - docker tag "${CONTAINER_REGISTRY_PUSH}/${REGISTRY_NAMESPACE}/resticker:release-${CI_COMMIT_SHORT_SHA}" "${CONTAINER_REGISTRY_PUSH}/${REGISTRY_NAMESPACE}/resticker:release"
