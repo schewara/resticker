@@ -41,7 +41,7 @@ docker-build:
       --label "org.opencontainers.image.authors=${GITLAB_USER_EMAIL}"
       --label "org.opencontainers.image.version=${CI_COMMIT_REF_NAME}"
       --label "org.opencontainers.image.revision=${CI_COMMIT_SHA}"
-      --tag "${CONTAINER_REGISTRY_PUSH}/${REGISTRY_NAMESPACE}:release-${CI_COMMIT_SHORT_SHA}"
+      --tag "${CONTAINER_REGISTRY_PUSH}/${REGISTRY_NAMESPACE}/resticker:release-${CI_COMMIT_SHORT_SHA}"
       --build-arg BUILDKIT_INLINE_CACHE=1
       "."
   after_script:
